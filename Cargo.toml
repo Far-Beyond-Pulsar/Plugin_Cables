@@ -1,5 +1,6 @@
 [package]
 name = "cables_plugin"
+license = "MPL-2.0"
 version = "0.1.0"
 edition = "2024"
 publish = false
