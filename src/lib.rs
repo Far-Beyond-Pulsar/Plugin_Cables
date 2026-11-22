@@ -7,6 +7,13 @@ pub use cables_feature;
 
 /// Registers authored cable types, their GPU rows, and the Helio feature.
 pub fn build(p: &mut pulsar_plugins::PluginBuilder) {
+    // The icon the editor shows beside this plugin (Extensions window).
+    #[cfg(feature = "editor")]
+    p.add(pulsar_plugins::PluginIcon {
+        origin: p.origin(),
+        format: pulsar_plugins::IconFormat::Png,
+        bytes: include_bytes!("../icon.png"),
+    });
     use engine_backend::scene::{ClassSpec, ComponentsBuilder};
     use helio_component::texture_assets::TextureBindingRegistration;
     p.components()
