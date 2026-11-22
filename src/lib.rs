@@ -43,3 +43,8 @@ pub fn build(p: &mut pulsar_plugins::PluginBuilder) {
         register: cables_component::register_texture_binding,
     });
 }
+
+// The plugin as a library of its own, loaded by the editor from `plugins/editor`
+// (`cargo build -p <this package> --release --features dll`).
+#[cfg(feature = "dll")]
+plugin_editor_api::export_library_plugin!();
