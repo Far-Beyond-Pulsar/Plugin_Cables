@@ -1,7 +1,7 @@
 [package]
 name = "cables_plugin"
 license = "MPL-2.0"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 publish = false
 description = "Cables (`pulsar.cables`): GPU-driven cables and connector components"
