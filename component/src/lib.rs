@@ -50,6 +50,14 @@ pub struct CableComponent {
     /// Resolved by the cable asset bindings when using 2D mode.
     #[property(category = "Appearance")]
     pub tile_texture: TextureSrc,
+    /// Hold the image compressed in video memory (see
+    /// `helio_component::texture_options`).
+    #[property(category = "Appearance")]
+    pub texture_compressed: bool,
+    /// The largest side, in texels, the GPU holds the image at; 0 for no
+    /// limit of this component's own.
+    #[property(min = 0, max = 16384, category = "Appearance")]
+    pub texture_max_size: i32,
     #[property(category = "Appearance")]
     pub surface: CableSurface,
     #[property(category = "Appearance")]
@@ -80,9 +88,46 @@ pub struct CableComponent {
     pub reset_revision: u32,
 }
 
+/// The project settings new components of this kind take their texture
+/// choice from.
+pub const TEXTURE_SETTINGS_OWNER: &str = "cable_textures";
+
+/// Registers [`TEXTURE_SETTINGS_OWNER`] (the plugin root submits it).
+pub fn register_texture_settings(cfg: &'static engine_state::settings::ConfigManager) {
+    helio_component::texture_options::register_settings(
+        cfg,
+        TEXTURE_SETTINGS_OWNER,
+        "Cable Textures",
+        "cables",
+    );
+}
+
+/// Gives a new component the project's texture choice (the plugin root
+/// submits it as a `NewComponentRegistration`).
+pub fn seed_new(value: &mut dyn std::any::Any) {
+    if let Some(component) = value.downcast_mut::<CableComponent>() {
+        let options =
+            helio_component::texture_options::TextureOptions::from_project(TEXTURE_SETTINGS_OWNER);
+        component.texture_compressed = options.compressed;
+        component.texture_max_size = options.max_size as i32;
+    }
+}
+
+impl CableComponent {
+    /// How this component wants its images held.
+    pub fn texture_options(&self) -> helio_component::texture_options::TextureOptions {
+        helio_component::texture_options::TextureOptions::new(
+            self.texture_compressed,
+            self.texture_max_size,
+        )
+    }
+}
+
 impl Default for CableComponent {
     fn default() -> Self {
         Self {
+            texture_compressed: true,
+            texture_max_size: 0,
             id: 1,
             enabled: true,
             render_mode: CableRenderMode::TwoD,
@@ -223,6 +268,7 @@ fn definition_dispatch(mirror: &GpuMirrorHandle, row: u32, data: *const (), is_n
             helio_component::texture_assets::texture_slot(
                 &component.tile_image,
                 &path.to_string_lossy(),
+                component.texture_options(),
                 mirror,
                 "cable",
             )

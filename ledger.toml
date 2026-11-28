@@ -1,0 +1,106 @@
+# The cables plugin's rows of the SceneDB closure ledger (Pulsar-Native#1035):
+# its classes, GPU schemas, buffers, pass crates and call sites. A plugin owns
+# the rows of what it ships (Pulsar-Native#1606); `cargo test -p scene_inventory`
+# in a Pulsar-Native checkout recomputes every fact column, checks the human
+# columns, and fails on a missing, stale or misplaced row. The columns are
+# described in Pulsar-Native's crates/core/scene_inventory/ledger.toml.
+
+# ── Exposed component classes ───────────────────────────────────
+
+[[class]]
+name = "CableComponent"
+category = "Rendering"
+world_registered = true
+own_gpu_columns = true
+owner = "cables_component"
+disposition = "render: an authored cable definition (appearance and simulation for one ID). Every write derives its CableDefinitionSourceRow; the plugin's join packs the enabled rows into cable_definitions, and CableSync pairs the connectors of its ID on the CPU each frame"
+target_contract = "Phase 6; 03-gpu-reflection-and-rendering.md; plugins/vendor/cables/DESIGN.md"
+test = "none: no test covers a CableComponent in a world or a rendered frame"
+status = "unverified"
+
+[[class]]
+name = "CableConnectorComponent"
+category = "Rendering"
+world_registered = true
+own_gpu_columns = false
+owner = "cables_component"
+disposition = "no GPU rows: an ID at its object's position, read by CableSync, which pairs connectors and publishes the frame's cable spans"
+target_contract = "plugins/vendor/cables/DESIGN.md"
+test = "none: cables_component::sync tests the problem messages, not pairing a world"
+status = "unverified"
+
+# ── GPU-bearing schemas ─────────────────────────────────────────
+
+[[schema]]
+type = "CableComponent"
+path = "cables_component::CableComponent"
+buffers = []
+clears_on_remove = true
+releases_var_len = false
+registered = false
+writer = "none: the authored component has no column of its own; its GPU registration derives CableDefinitionSourceRow on every insert, write, removal and replay, and removal clears it"
+owner = "cables_component"
+disposition = "keep: the authored cable definition; its GPU row is the derived one below"
+target_contract = "Phase 6; 03-gpu-reflection-and-rendering.md"
+test = "none: no test mirrors a CableComponent"
+status = "unverified"
+
+[[schema]]
+type = "CableDefinitionSourceRow"
+path = "cables_component::CableDefinitionSourceRow"
+buffers = ["cable_definition_sources"]
+clears_on_remove = true
+releases_var_len = false
+registered = true
+writer = "CableComponent's derived GPU registration (with the tile texture's slot in the scene's texture store)"
+owner = "cables_component"
+disposition = "keep: the cable join's input, at the owning object's scene slot"
+target_contract = "Phase 6; 03-gpu-reflection-and-rendering.md"
+test = "none: no test mirrors a CableComponent"
+status = "unverified"
+
+# ── GPU buffer keys ─────────────────────────────────────────────
+
+[[buffer]]
+key = "cable_definition_sources"
+producers = ["CableDefinitionSourceRow"]
+consumers = ["cables_component"]
+owner = "cables_component"
+disposition = "keep: one definition row per CableComponent, read by the cable join"
+target_contract = "Phase 6; 03-gpu-reflection-and-rendering.md"
+test = "none: no test runs the cable join"
+status = "unverified"
+
+[[buffer]]
+key = "cable_definitions"
+producers = []
+consumers = ["cables_component", "helio-pass-cables"]
+owner = "cables_api (contract CABLE_DEFINITIONS); written by the cable join (cables_component::row_derivation)"
+disposition = "keep: the enabled definitions packed into the leading rows (at most 256), joined on the GPU; the cable pass looks a span's definition up by ID"
+target_contract = "Phase 6; 03-gpu-reflection-and-rendering.md"
+test = "none: no test runs the cable join"
+status = "unverified"
+
+# ── Render pass crates ──────────────────────────────────────────
+
+[[pass]]
+crate = "helio-pass-cables"
+in_default_graph = false
+reads = ["cable_definitions"]
+owner = "helio-pass-cables"
+disposition = "keep: draws the frame's cable spans as ribbons and tubes with their definition rows, depth tested and writing depth"
+target_contract = "Phase 6; 03-gpu-reflection-and-rendering.md"
+test = "none: plugins/vendor/cables/feature/src/render.rs tests only shader validation and layouts; no test renders a cable"
+status = "unverified"
+
+# ── Lifecycle call sites ────────────────────────────────────────
+
+[[site]]
+pattern = "asset-binding"
+file = "plugins/vendor/cables/component/src/lib.rs"
+count = 1
+owner = "cables_component (register_texture_binding)"
+disposition = "keep: binds a loaded tile texture into the cables naming it, through the shared texture asset kind"
+target_contract = "SceneDB#84; 07-assets-and-runtime-lifecycle.md"
+test = "none: no test covers a cable's tile texture"
+status = "unverified"

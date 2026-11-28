@@ -22,6 +22,7 @@ cables_component = { workspace = true }
 cables_feature = { workspace = true }
 engine_backend = { path = "../../../crates/core/engine_backend", default-features = false, features = ["render"] }
 helio_component = { workspace = true }
+pulsar_settings = { workspace = true }
 
 [lints]
 workspace = true

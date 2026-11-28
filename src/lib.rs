@@ -14,6 +14,18 @@ pub fn build(p: &mut pulsar_plugins::PluginBuilder) {
         format: pulsar_plugins::IconFormat::Png,
         bytes: include_bytes!("../icon.png"),
     });
+    // What a new component's texture choice starts as: the project's.
+    p.add(pulsar_settings::project::ProjectSettingsRegistration {
+        origin: p.origin(),
+        name: "cables.textures_settings",
+        register: cables_component::register_texture_settings,
+    });
+    p.add(helio_component::asset_component::NewComponentRegistration {
+        origin: p.origin(),
+        class_name: cables_component::CABLE_CLASS_NAME,
+        seed: cables_component::seed_new,
+    });
+
     use engine_backend::scene::{ClassSpec, ComponentsBuilder};
     use helio_component::texture_assets::TextureBindingRegistration;
     p.components()
